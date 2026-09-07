@@ -8,10 +8,12 @@
         <div class="field">
             {{ form.email.label }}
             {{ form.email(placeholder="you@example.com") }}
+            {% for err in form.email.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <div class="field">
             {{ form.password.label }}
             {{ form.password() }}
+            {% for err in form.password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <div class="field">
             <label><input type="checkbox" name="remember_me"> Remember me</label>

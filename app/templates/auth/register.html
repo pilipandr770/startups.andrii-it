@@ -13,18 +13,23 @@
         <div class="field">
             {{ form.email.label }}
             {{ form.email() }}
+            {% for err in form.email.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <div class="field">
             {{ form.legal_entity_name.label }}
             {{ form.legal_entity_name() }}
+            {% for err in form.legal_entity_name.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <div class="field">
             {{ form.password.label }}
             {{ form.password() }}
+            <p class="hint">At least 8 characters.</p>
+            {% for err in form.password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <div class="field">
             {{ form.confirm_password.label }}
             {{ form.confirm_password() }}
+            {% for err in form.confirm_password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
         </div>
         <button class="btn" type="submit">Create account</button>
     </form>
