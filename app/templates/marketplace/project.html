@@ -47,6 +47,9 @@
 <div class="card">
     <h3>Links</h3>
     <p><a class="btn btn-secondary" href="{{ profile.external_url }}" target="_blank" rel="noopener">Visit project website ↗</a></p>
+    {% if profile.pitch_deck_path %}
+        <p><a class="btn btn-secondary" href="{{ url_for('static', filename=profile.pitch_deck_path) }}" target="_blank" rel="noopener">Download pitch deck (PDF) ↓</a></p>
+    {% endif %}
     {% if profile.founder_contact_email %}
         <p>Contact: <a href="mailto:{{ profile.founder_contact_email }}">{{ profile.founder_contact_email }}</a></p>
     {% endif %}

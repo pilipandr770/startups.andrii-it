@@ -18,7 +18,14 @@
     </div>
     <div class="field">{{ form.video_url.label }}{{ form.video_url() }}</div>
     <div class="field">{{ form.banner_image.label }}{{ form.banner_image() }}</div>
-    <div class="field">{{ form.pitch_deck.label }}{{ form.pitch_deck() }}</div>
+    <div class="field">
+        {{ form.pitch_deck.label }}{{ form.pitch_deck() }}
+        <p class="hint">
+            Just a downloadable file shown on your public page — the AI assistant does
+            <strong>not</strong> read this. To write what the assistant actually says to visitors,
+            use <a href="{{ url_for('founder.chatbot_settings') }}">Configure pitch bot</a> on your dashboard.
+        </p>
+    </div>
 
     <div class="field">
         {{ form.legal_entity_name.label }}{{ form.legal_entity_name() }}

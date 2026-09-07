@@ -33,6 +33,14 @@
             </form>
         {% endif %}
     </div>
+    <p class="hint" style="margin-top:10px;">
+        "Configure pitch bot" is where you write what your AI assistant actually
+        knows and says — not the pitch deck PDF in your profile, which is just a
+        downloadable file.
+        {% if not (profile.subscription and profile.subscription.has_feature("ai_pitch")) %}
+            Note: the assistant only appears on your public page once your plan includes the AI Pitcher tier.
+        {% endif %}
+    </p>
 </div>
 
 <div class="card">
