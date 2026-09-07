@@ -10,16 +10,37 @@
     <p>Owner: {{ p.owner.email }} | Subscription:
         {% if p.subscription %}{{ p.subscription.status }} ({{ p.subscription.tier }}/{{ p.subscription.plan }}){% else %}none{% endif %}
     </p>
-    <div style="display:flex;gap:10px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <a class="btn btn-sm btn-secondary" href="{{ url_for('marketplace.project_detail', slug=p.slug) }}">View</a>
+
+        {% if p.status != "published" %}
+        <form method="post" action="{{ url_for('superadmin.publish', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm" type="submit">Publish (skip moderation queue)</button>
+        </form>
+        {% else %}
         <form method="post" action="{{ url_for('superadmin.unpublish', profile_id=p.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-danger" type="submit">Unpublish</button>
         </form>
-        <form method="post" action="{{ url_for('superadmin.grant_subscription', profile_id=p.id) }}">
+        {% endif %}
+
+        <form method="post" action="{{ url_for('superadmin.grant_subscription', profile_id=p.id) }}" style="display:flex;gap:6px;align-items:center;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-sm" type="submit">Grant subscription (own project)</button>
+            <select name="tier" class="btn-sm" style="padding:6px 8px;border-radius:8px;">
+                {% for t in ["presentation", "ai_pitch", "payments"] %}
+                <option value="{{ t }}" {% if p.subscription and p.subscription.tier == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-sm" type="submit">Set subscription (no charge)</button>
         </form>
+
+        {% if p.subscription and p.subscription.is_active %}
+        <form method="post" action="{{ url_for('superadmin.revoke_subscription', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Revoke subscription</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 {% endfor %}

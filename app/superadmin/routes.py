@@ -1,10 +1,12 @@
-from flask import render_template, redirect, url_for, flash
+from datetime import datetime
+
+from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required
 
 from app.superadmin import bp
 from app.decorators import superadmin_required
 from app.extensions import db
-from app.models import User, FounderProfile, Subscription, SubscriptionStatus, SubscriptionTier
+from app.models import User, FounderProfile, ProfileStatus, Subscription, SubscriptionStatus, SubscriptionTier
 
 
 @bp.route("/")
@@ -20,8 +22,6 @@ def index():
 @login_required
 @superadmin_required
 def unpublish(profile_id):
-    from app.models import ProfileStatus
-
     profile = FounderProfile.query.get_or_404(profile_id)
     profile.status = ProfileStatus.SUSPENDED
     db.session.commit()
@@ -29,22 +29,62 @@ def unpublish(profile_id):
     return redirect(url_for("superadmin.index"))
 
 
+@bp.route("/profile/<int:profile_id>/publish", methods=["POST"])
+@login_required
+@superadmin_required
+def publish(profile_id):
+    """Publish directly, skipping the moderation queue — for your own
+    projects, where you're both the founder and the moderator."""
+    profile = FounderProfile.query.get_or_404(profile_id)
+    profile.status = ProfileStatus.PUBLISHED
+    profile.published_at = datetime.utcnow()
+    profile.rejection_reason = None
+    if profile.founder_stripe_payment_link and profile.owner.legal_entity_name:
+        profile.owner.is_legal_entity_confirmed = True
+    db.session.commit()
+    flash(f"Published: {profile.project_name}", "success")
+    return redirect(url_for("superadmin.index"))
+
+
 @bp.route("/subscription/<int:profile_id>/grant", methods=["POST"])
 @login_required
 @superadmin_required
 def grant_subscription(profile_id):
-    """Manually grant/extend a full-tier subscription — e.g. for your own 15
-    projects, which are never expected to pay the platform subscription
-    themselves but should still get every feature (AI pitcher + payments)."""
+    """Manually set a subscription tier — e.g. for your own ~15 projects,
+    which are never expected to pay the platform subscription themselves.
+    Lets you pick the tier per project rather than always granting every
+    feature (a project you're not ready to accept donations on yet doesn't
+    have to jump straight to the Payments tier)."""
     profile = FounderProfile.query.get_or_404(profile_id)
+    tier = request.form.get("tier", SubscriptionTier.PAYMENTS)
+    if tier not in SubscriptionTier.ALL:
+        abort(400)
+
     sub = profile.subscription
     if not sub:
         sub = Subscription(founder_profile_id=profile.id)
         db.session.add(sub)
     sub.status = SubscriptionStatus.ACTIVE
-    sub.tier = SubscriptionTier.PAYMENTS
+    sub.tier = tier
     db.session.commit()
-    flash(f"Full-tier subscription granted: {profile.project_name}", "success")
+    flash(f"Subscription set to '{tier}': {profile.project_name}", "success")
+    return redirect(url_for("superadmin.index"))
+
+
+@bp.route("/subscription/<int:profile_id>/revoke", methods=["POST"])
+@login_required
+@superadmin_required
+def revoke_subscription(profile_id):
+    """Cancel a manually-granted subscription — e.g. to test what a founder
+    without an active subscription actually sees, or to undo a grant made by
+    mistake. Does not unpublish the listing itself (that's ProfileStatus,
+    tracked separately) — only removes the AI pitcher / payments features."""
+    profile = FounderProfile.query.get_or_404(profile_id)
+    sub = profile.subscription
+    if sub:
+        sub.status = SubscriptionStatus.CANCELLED
+        db.session.commit()
+        flash(f"Subscription revoked: {profile.project_name}", "warning")
     return redirect(url_for("superadmin.index"))
 
 
