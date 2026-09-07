@@ -1,104 +1,95 @@
 # Deploying to the VPS
 
-Matches the pattern already used for Andrii's other projects: one shared
-VPS, one Docker Compose stack per app, a shared Nginx reverse proxy routing
-by subdomain, Let's Encrypt via certbot. See `docs/ARCHITECTURE.md`.
+The shared VPS (Hostinger, `187.124.6.120`, `srv1425385.hstgr.cloud`) already
+runs one Traefik instance (`/docker/traefik-8r2b`) that owns ports 80/443
+for every app on the box, routing by Docker labels and terminating TLS via
+Let's Encrypt through Cloudflare's DNS-01 challenge (`cfdns` resolver — see
+`/docker/traefik-8r2b/docker-compose.yml`). **Use `docker-compose.traefik.yml`
+for this app, not `docker-compose.yml`** (that one assumes a dedicated
+Nginx+certbot setup this VPS doesn't use — kept for reference/other hosts).
 
-This app's `docker-compose.yml` and `Dockerfile` were built and smoke-tested
-locally on 2026-09-07 (full stack: gunicorn + Postgres + migrations +
-seed, verified over HTTP) — see `docs/STATE.md` for what that testing
-found and fixed. What's below has NOT yet been run against the real VPS.
+This app's compose files were built and smoke-tested locally on
+2026-09-07 (full stack: gunicorn + Postgres + migrations + seed, verified
+over HTTP) — see `docs/STATE.md` for what that testing found and fixed
+(two real CSRF-related bugs, a Postgres startup race).
 
-## 1. Get the code onto the VPS
+## 1. DNS (done)
+
+`startups.andrii-it.de` -> `187.124.6.120`, A record, DNS-only (grey
+cloud) in Cloudflare — added 2026-09-07, matching the pattern already used
+by `botteu.andrii-it.de` and `nis2.andrii-it.de` on the same VPS (Traefik
+handles TLS directly via the DNS-01 challenge; the Cloudflare proxy layer
+isn't needed on top of that for this app).
+
+## 2. Get the code onto the VPS
 
 ```bash
-# On the VPS, in whatever directory holds your other projects' repos:
-git clone <this-repo-url> startup-showcase
+git clone https://github.com/pilipandr770/startups.andrii-it.git startup-showcase
 cd startup-showcase
 ```
 
-(If this project isn't pushed to a git remote yet, that's step zero —
-ask before doing this if you want it kept private initially.)
+## 3. Production `.env`
 
-## 2. Production `.env`
+Copy `.env.example` to `.env` and fill in real values. Critical differences
+from local dev:
 
-Copy `.env.example` to `.env` on the VPS and fill in real values. Critical
-differences from local dev:
-
-- `FLASK_ENV=production` (NOT `development` — this is what turns off Flask's
-  debug mode; leaving it as `development` would expose the interactive
-  debugger and stack traces to the public internet)
-- `SECRET_KEY` — a real random value (`python -c "import secrets; print(secrets.token_hex(32))"`)
-- `DATABASE_URL=postgresql://startupshowcase:<POSTGRES_PASSWORD>@db:5432/startupshowcase`
-  (matching whatever you set `POSTGRES_PASSWORD` to — `docker-compose.yml`
-  reads that from the environment, so either export it or add it to `.env`
-  and reference it: `POSTGRES_PASSWORD=...` alongside `DATABASE_URL`)
-- `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` — your real login, real password
-- `BASE_URL=https://<your-subdomain>` (used to build Stripe Checkout
-  success/cancel URLs — must be the real public HTTPS URL)
+- `FLASK_ENV=production` (turns off Flask's debug mode — leaving this as
+  `development` would expose the interactive debugger to the internet)
+- `SECRET_KEY` — `python3 -c "import secrets; print(secrets.token_hex(32))"`
+- `POSTGRES_PASSWORD` — a real value (the compose file builds `DATABASE_URL`
+  from this automatically, no need to also set `DATABASE_URL` by hand)
+- `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` — real login
+- `BASE_URL=https://startups.andrii-it.de` (used to build Stripe Checkout
+  success/cancel URLs)
+- `TRAEFIK_DOMAIN=startups.andrii-it.de` and `TRAEFIK_CERTRESOLVER=cfdns`
+  (add these two — they're not in `.env.example` since they're specific to
+  this VPS's Traefik setup, referenced by `docker-compose.traefik.yml`)
 - The six `STRIPE_PLATFORM_PRICE_ID_*` vars, `STRIPE_PLATFORM_SECRET_KEY`,
   `STRIPE_PLATFORM_PUBLISHABLE_KEY`, `STRIPE_PLATFORM_WEBHOOK_SECRET` — see
   step 5.
-- `ANTHROPIC_API_KEY` — for the pitch bot to actually respond instead of
-  showing the placeholder message.
+- `ANTHROPIC_API_KEY` — for the pitch bot to actually respond.
 
-## 3. Bring the stack up
+## 4. Bring the stack up
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.traefik.yml up -d --build
 ```
 
 Migrations run automatically on container start (`docker-entrypoint.sh`).
 First time only, seed categories + bootstrap the superadmin account:
 
 ```bash
-docker compose exec web flask seed
+docker compose -f docker-compose.traefik.yml exec web flask seed
 ```
 
-## 4. Nginx + subdomain + HTTPS
-
-`nginx.conf` in the repo root is a template server block — adapt it into
-your existing shared Nginx config the way your other subdomains are set
-up, pointing `proxy_pass` at the `web` service. Then:
-
-```bash
-certbot --nginx -d <your-subdomain>
-```
-
-**DNS**: add an A record (or AAAA/CNAME, matching how your other subdomains
-are set up) for `<your-subdomain>` -> the VPS's IP, in whichever DNS
-provider hosts the parent domain. If that's Cloudflare and the record is
-proxied (orange cloud), set Cloudflare's SSL/TLS mode to **Full (strict)**
-once certbot has issued a real certificate on the origin — "Flexible" mode
-would have Cloudflare talk to the VPS over plain HTTP, which is not what
-you want for a login/payment flow. DNS-only (grey cloud) also works and is
-simpler if you don't need Cloudflare's proxy features for this subdomain.
+Traefik picks the new container up automatically via its Docker label
+provider — no Traefik restart or config edit needed. Check
+`https://startups.andrii-it.de` within a minute or two; the ACME
+certificate is issued on first request to that router.
 
 ## 5. Stripe: connect the real webhook
 
-Once `https://<your-subdomain>` is live:
+Once `https://startups.andrii-it.de` is live:
 
 1. Stripe Dashboard -> Developers -> Webhooks -> Add endpoint.
-2. Endpoint URL: `https://<your-subdomain>/payments/webhook/stripe-platform`
+2. Endpoint URL: `https://startups.andrii-it.de/payments/webhook/stripe-platform`
 3. Events to send: at minimum `checkout.session.completed`,
    `customer.subscription.updated`, `customer.subscription.deleted` (see
-   `app/payments/platform_subscription.py::handle_webhook_event` for
-   exactly what's handled).
+   `app/payments/platform_subscription.py::handle_webhook_event`).
 4. Copy the endpoint's **Signing secret** into `STRIPE_PLATFORM_WEBHOOK_SECRET`
-   in `.env` on the VPS, then `docker compose up -d` to pick it up (the
-   route refuses to process anything if this is unset — see
-   `docs/STATE.md`).
+   in `.env`, then `docker compose -f docker-compose.traefik.yml up -d` to
+   pick it up (the route refuses to process anything if this is unset).
 5. Create the six recurring Prices (`presentation`/`ai_pitch`/`payments` x
    monthly/annual) in Stripe Dashboard -> Product catalog, and drop their
    IDs into the matching `STRIPE_PLATFORM_PRICE_ID_*` vars.
-6. Test with Stripe CLI against the live endpoint, or trigger a real test-mode
-   checkout, before trusting it with real money.
+6. Test with Stripe CLI or a real test-mode checkout before trusting it
+   with real money.
 
 ## Redeploying after a code change
 
 ```bash
 git pull
-docker compose up -d --build
+docker compose -f docker-compose.traefik.yml up -d --build
 ```
 
 Migrations re-run automatically and are a no-op if nothing changed.

@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────────────────
+# STARTUP SHOWCASE — Docker Compose for the shared Traefik reverse proxy
+# already running on the VPS (see /docker/traefik-8r2b), as opposed to
+# docker-compose.yml, which assumes a dedicated Nginx+certbot setup.
+#
+# Traefik already owns ports 80/443 and routes to backend containers via
+# Docker labels + its ACME resolvers (--providers.docker=true,
+# --providers.docker.exposedbydefault=false). This file adds no nginx/
+# certbot service — Traefik terminates TLS and proxies straight to `web`.
+#
+# Usage on the VPS:
+#   cp .env.example .env   # fill in real values — see docs/DEPLOY.md
+#   TRAEFIK_DOMAIN=startups.andrii-it.de docker compose -f docker-compose.traefik.yml up -d --build
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://startupshowcase:${POSTGRES_PASSWORD:-change-me}@db:5432/startupshowcase
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/app/static/uploads
+    expose:
+      - "5000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.startups.entrypoints=websecure"
+      - "traefik.http.routers.startups.rule=Host(`${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.startups.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cfdns}"
+      - "traefik.http.services.startups.loadbalancer.server.port=5000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: startupshowcase
+      POSTGRES_USER: startupshowcase
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U startupshowcase -d startupshowcase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
+  uploads_data:
