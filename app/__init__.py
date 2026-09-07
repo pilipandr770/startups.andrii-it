@@ -1,5 +1,6 @@
 import os
-from flask import Flask, request, session
+from flask import Flask, request, session, flash, redirect, url_for
+from flask_wtf.csrf import CSRFError
 
 from app.config import config_map
 from app.extensions import db, login_manager, migrate, babel, csrf
@@ -60,6 +61,16 @@ def create_app(config_name=None):
     def inject_globals():
         from flask import get_flashed_messages
         return {"current_locale": select_locale()}
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        # A raw "Bad Request / The CSRF token has expired" page is a dead end
+        # for the user — send them back to the form (a fresh GET issues a new
+        # token) with an explanation instead. Most common trigger: the
+        # profile-edit form left open for a while (e.g. a side-trip to Stripe
+        # to grab a payment link) — see WTF_CSRF_TIME_LIMIT in config.py.
+        flash("Your session timed out — please try again.", "warning")
+        return redirect(request.referrer or url_for("marketplace.index"))
 
     @app.cli.command("seed")
     def seed_command():

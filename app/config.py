@@ -8,6 +8,13 @@ basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+    # Flask-WTF defaults this to 3600s (1 hour). The profile-edit form is long
+    # and often involves a side-trip to Stripe to grab a payment link before
+    # coming back to paste it in — a 1-hour window is too easy to blow past,
+    # which surfaces as an ugly unstyled "CSRF token has expired" page. None
+    # disables the time-based expiry; the token is still session-bound, which
+    # is the actual CSRF defense.
+    WTF_CSRF_TIME_LIMIT = None
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "sqlite:///" + os.path.join(basedir, "dev.db")
     )
