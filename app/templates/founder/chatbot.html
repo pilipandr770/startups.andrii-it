@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Pitch bot — Startup Showcase{% endblock %}
+{% block content %}
+<h2>Configure your AI pitch assistant</h2>
+<p style="color:var(--color-muted);">
+    Write this once — it answers visitor questions on your project page,
+    in their own language, at any time.
+</p>
+<form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="field">
+        {{ form.pitch_instructions.label }}
+        {{ form.pitch_instructions(rows=14) }}
+    </div>
+    <button class="btn" type="submit">Save instructions</button>
+</form>
+{% endblock %}

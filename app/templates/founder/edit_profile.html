@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Edit profile — Startup Showcase{% endblock %}
+{% block content %}
+<h2>{% if profile %}Edit your listing{% else %}Create your listing{% endif %}</h2>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="field">{{ form.project_name.label }}{{ form.project_name() }}</div>
+    <div class="field">{{ form.tagline.label }}{{ form.tagline() }}</div>
+    <div class="field">{{ form.description.label }}{{ form.description() }}</div>
+    <div class="field">{{ form.category_id.label }}{{ form.category_id() }}</div>
+    <div class="field">{{ form.stage.label }}{{ form.stage() }}</div>
+
+    <div class="field">
+        {{ form.external_url.label }}{{ form.external_url() }}
+        <p class="hint">Visitors are sent directly to this site — we don't host or embed it.</p>
+    </div>
+    <div class="field">{{ form.video_url.label }}{{ form.video_url() }}</div>
+    <div class="field">{{ form.banner_image.label }}{{ form.banner_image() }}</div>
+    <div class="field">{{ form.pitch_deck.label }}{{ form.pitch_deck() }}</div>
+
+    <div class="field">
+        {{ form.legal_entity_name.label }}{{ form.legal_entity_name() }}
+        {% for err in form.legal_entity_name.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+    </div>
+    <div class="field">{{ form.funding_goal_text.label }}{{ form.funding_goal_text() }}</div>
+    <div class="field">
+        {{ form.donation_terms.label }}{{ form.donation_terms() }}
+        {% for err in form.donation_terms.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+    </div>
+    <div class="field">
+        {{ form.founder_stripe_payment_link.label }}{{ form.founder_stripe_payment_link() }}
+        <p class="hint">
+            Create this at your own
+            <a href="https://dashboard.stripe.com/payment-links/create" target="_blank" rel="noopener">Stripe Dashboard → Payment Links</a>
+            (sign up free at <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener">dashboard.stripe.com/register</a> if you don't have an account).
+            Stripe verifies your identity/business and holds your payout details — we never see them.
+            Stripe's own processing fees apply to your account, not ours.
+            We only accept links on stripe.com, shown live to visitors as-is.
+        </p>
+        {% for err in form.founder_stripe_payment_link.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+    </div>
+    <div class="field">{{ form.founder_contact_email.label }}{{ form.founder_contact_email() }}</div>
+
+    <button class="btn" type="submit">Save</button>
+</form>
+{% endblock %}

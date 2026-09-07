@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Moderation queue{% endblock %}
+{% block content %}
+<h2>Moderation queue ({{ profiles|length }})</h2>
+
+{% for p in profiles %}
+<div class="card">
+    <h3>{{ p.project_name }}</h3>
+    <p>{{ p.tagline }}</p>
+    <p><a href="{{ p.external_url }}" target="_blank" rel="noopener">{{ p.external_url }}</a></p>
+    <p>{{ p.description }}</p>
+
+    <p class="hint">
+        Owner: {{ p.owner.email }} —
+        legal entity: <strong>{{ p.owner.legal_entity_name or "not provided" }}</strong>
+        {% if p.owner.is_legal_entity_confirmed %}(previously confirmed){% endif %}
+    </p>
+    {% if p.founder_stripe_payment_link %}
+    <p class="hint">
+        Donation link: <a href="{{ p.founder_stripe_payment_link }}" target="_blank" rel="noopener">{{ p.founder_stripe_payment_link }}</a>
+        — goal: {{ p.funding_goal_text or "(none stated)" }}
+        <br>Terms: {{ p.donation_terms or "(none stated)" }}
+    </p>
+    {% else %}
+    <p class="hint">No donation link set.</p>
+    {% endif %}
+
+    <div style="display:flex;gap:10px;">
+        <form method="post" action="{{ url_for('admin.approve', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm" type="submit">Approve</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.reject', profile_id=p.id) }}" style="display:flex;gap:6px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="reason" placeholder="Rejection reason">
+            <button class="btn btn-sm btn-danger" type="submit">Reject</button>
+        </form>
+    </div>
+</div>
+{% else %}
+<p>No pending submissions.</p>
+{% endfor %}
+{% endblock %}

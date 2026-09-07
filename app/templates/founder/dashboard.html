@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Startup Showcase{% endblock %}
+{% block content %}
+<h2>Your dashboard</h2>
+
+{% if not profile %}
+<div class="card">
+    <p>You haven't set up your project listing yet.</p>
+    <a class="btn" href="{{ url_for('founder.edit_profile') }}">Create your listing</a>
+</div>
+{% else %}
+<div class="card">
+    <h3>{{ profile.project_name }}
+        <span class="status-pill status-{{ profile.status }}">{{ profile.status }}</span>
+    </h3>
+    <p>{{ profile.tagline }}</p>
+    <p><strong>Link:</strong> <a href="{{ profile.external_url }}" target="_blank" rel="noopener">{{ profile.external_url }}</a></p>
+
+    {% if profile.status == "rejected" and profile.rejection_reason %}
+        <p style="color:var(--color-danger);">Rejection reason: {{ profile.rejection_reason }}</p>
+    {% endif %}
+
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-secondary" href="{{ url_for('founder.edit_profile') }}">Edit profile</a>
+        <a class="btn btn-secondary" href="{{ url_for('founder.chatbot_settings') }}">Configure pitch bot</a>
+        {% if profile.is_visible_to_public %}
+            <a class="btn btn-secondary" href="{{ url_for('marketplace.project_detail', slug=profile.slug) }}">View public page</a>
+        {% endif %}
+        {% if profile.status in ("draft", "rejected") %}
+            <form method="post" action="{{ url_for('founder.submit_for_review') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn" type="submit">Submit for review</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Compliance badge</h3>
+    {% set scan = profile.latest_compliance_scan %}
+    {% if scan %}
+        <p>Current: <span class="badge badge-{{ scan.badge_level }}">{{ scan.badge_level }}</span>
+        <span class="hint">(scanned {{ scan.scan_date.strftime('%Y-%m-%d %H:%M') }} UTC)</span></p>
+        <p class="hint">{{ scan.summary }}</p>
+        {% if scan.findings %}
+        <ul class="scan-findings">
+            {% for f in scan.findings %}
+            <li class="finding finding-{{ f.status }}">
+                <span class="finding-icon">{{ {"pass": "✓", "fail": "✗", "warn": "⚠", "info": "ℹ"}[f.status] }}</span>
+                <strong>{{ f.label }}</strong> — {{ f.detail }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    {% else %}
+        <p>No scan yet.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('compliance.request_basic_scan') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary btn-sm" type="submit">Request basic scan</button>
+    </form>
+    <p class="hint">
+        Automated check of your public site's HTTPS setup and security
+        headers (Basic Verified tier only). A deeper NIS2/BSI A5 audit is a
+        separate, manually-arranged process.
+    </p>
+</div>
+
+<div class="card">
+    <h3>Platform subscription</h3>
+    {% set sub = profile.subscription %}
+    {% if sub %}
+        <p>Status: <strong>{{ sub.status }}</strong> — billed {{ sub.plan }}</p>
+    {% endif %}
+
+    <div class="grid" style="grid-template-columns:repeat(3, minmax(160px,1fr));gap:12px;margin:16px 0;">
+        {% for t, title, includes in [
+            ("presentation", "Presentation", ["Public listing card"]),
+            ("ai_pitch", "+ AI Pitcher", ["Public listing card", "AI pitch assistant"]),
+            ("payments", "+ Payments", ["Public listing card", "AI pitch assistant", "Donation / payment button"]),
+        ] %}
+        <div class="card" style="margin-bottom:0;{% if sub and sub.tier == t %}border-color:var(--color-accent);{% endif %}">
+            <h4 style="margin-top:0;">{{ title }}</h4>
+            <ul style="padding-left:18px;font-size:0.82rem;color:var(--color-muted);margin:8px 0;">
+                {% for item in includes %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+            {% if sub and sub.tier == t and sub.is_active %}
+                <span class="status-pill status-published">Current plan</span>
+            {% else %}
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <a class="btn btn-sm" href="{{ url_for('payments.subscribe', tier=t, period='monthly') }}">Monthly</a>
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('payments.subscribe', tier=t, period='annual') }}">Annual</a>
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <p class="hint">Tiers are cumulative — each one includes everything in the tier(s) to its left.</p>
+</div>
+
+<div class="card">
+    <h3>Accepting payments — how it works</h3>
+    <ol style="padding-left:20px;font-size:0.9rem;">
+        <li>Upgrade to the <strong>Payments</strong> tier above.</li>
+        <li>Create your own free Stripe account at
+            <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener">dashboard.stripe.com/register</a>
+            — Stripe verifies your identity/business directly with you; we never see or store that.</li>
+        <li>Create a Payment Link at
+            <a href="https://dashboard.stripe.com/payment-links/create" target="_blank" rel="noopener">dashboard.stripe.com/payment-links/create</a>.</li>
+        <li>Paste the resulting stripe.com link, your legal entity name, and your donation terms into your
+            <a href="{{ url_for('founder.edit_profile') }}">profile</a>, then submit for review.</li>
+    </ol>
+    <p class="hint">
+        Stripe's own processing fees apply to your Stripe account, not ours — we never take a cut of
+        donations. We only ever accept stripe.com-hosted payment links (checked automatically), and any
+        listing with a donation ask is reviewed by a person before it goes live — this keeps the platform
+        from becoming a vector for scam or phishing "donate" links.
+    </p>
+</div>
+{% endif %}
+{% endblock %}

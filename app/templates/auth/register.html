@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Register — Startup Showcase{% endblock %}
+{% block content %}
+<div class="card" style="max-width:460px;margin:0 auto;">
+    <h2>Register your project</h2>
+    <p style="color:var(--color-muted);font-size:0.9rem;">
+        A registered legal entity is required if you plan to accept donations
+        through your own Stripe account — see our
+        <a href="#">terms</a> for details.
+    </p>
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">
+            {{ form.email.label }}
+            {{ form.email() }}
+        </div>
+        <div class="field">
+            {{ form.legal_entity_name.label }}
+            {{ form.legal_entity_name() }}
+        </div>
+        <div class="field">
+            {{ form.password.label }}
+            {{ form.password() }}
+        </div>
+        <div class="field">
+            {{ form.confirm_password.label }}
+            {{ form.confirm_password() }}
+        </div>
+        <button class="btn" type="submit">Create account</button>
+    </form>
+</div>
+{% endblock %}

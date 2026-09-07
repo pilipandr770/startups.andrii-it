@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Superadmin{% endblock %}
+{% block content %}
+<h2>Superadmin</h2>
+
+<h3>All projects ({{ profiles|length }})</h3>
+{% for p in profiles %}
+<div class="card">
+    <h4>{{ p.project_name }} <span class="status-pill status-{{ p.status }}">{{ p.status }}</span></h4>
+    <p>Owner: {{ p.owner.email }} | Subscription:
+        {% if p.subscription %}{{ p.subscription.status }} ({{ p.subscription.tier }}/{{ p.subscription.plan }}){% else %}none{% endif %}
+    </p>
+    <div style="display:flex;gap:10px;">
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('marketplace.project_detail', slug=p.slug) }}">View</a>
+        <form method="post" action="{{ url_for('superadmin.unpublish', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-danger" type="submit">Unpublish</button>
+        </form>
+        <form method="post" action="{{ url_for('superadmin.grant_subscription', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm" type="submit">Grant subscription (own project)</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<h3>All users ({{ users|length }})</h3>
+{% for u in users %}
+<div class="card">
+    <p>{{ u.email }} — role: <strong>{{ u.role }}</strong></p>
+    {% if u.role == "founder" %}
+    <form method="post" action="{{ url_for('superadmin.promote_to_admin', user_id=u.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-secondary" type="submit">Promote to admin</button>
+    </form>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

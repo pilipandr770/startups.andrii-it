@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="{{ current_locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Startup Showcase{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="{{ url_for('marketplace.index') }}" class="logo">Startup Showcase</a>
+            <nav>
+                <a href="{{ url_for('marketplace.index') }}">Marketplace</a>
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_superadmin %}
+                        <a href="{{ url_for('superadmin.index') }}">Superadmin</a>
+                    {% elif current_user.is_admin %}
+                        <a href="{{ url_for('admin.queue') }}">Moderation</a>
+                    {% else %}
+                        <a href="{{ url_for('founder.dashboard') }}">Dashboard</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn-nav">Register</a>
+                {% endif %}
+                <span class="lang-switch">
+                    <a href="{{ url_for('set_locale', locale='en') }}">EN</a> /
+                    <a href="{{ url_for('set_locale', locale='de') }}">DE</a>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; {{ 2026 }} Startup Showcase — a project by andrii-it.de</p>
+            <p class="disclaimer">
+                This platform is a discovery showcase only. It does not process,
+                hold, or transmit funds on behalf of listed projects, and does not
+                offer investment advice. Supporting a project is a direct
+                transaction between you and that project's own team via their own
+                payment provider.
+            </p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

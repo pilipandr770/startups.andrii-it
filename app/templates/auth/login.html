@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Login — Startup Showcase{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:0 auto;">
+    <h2>Login</h2>
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">
+            {{ form.email.label }}
+            {{ form.email(placeholder="you@example.com") }}
+        </div>
+        <div class="field">
+            {{ form.password.label }}
+            {{ form.password() }}
+        </div>
+        <div class="field">
+            <label><input type="checkbox" name="remember_me"> Remember me</label>
+        </div>
+        <button class="btn" type="submit">Login</button>
+    </form>
+    <p style="margin-top:16px;font-size:0.9rem;color:var(--color-muted);">
+        No account yet? <a href="{{ url_for('auth.register') }}">Register</a>
+    </p>
+</div>
+{% endblock %}

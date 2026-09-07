@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.project_name }} — Startup Showcase{% endblock %}
+{% block content %}
+
+{% if not profile.is_visible_to_public %}
+<div class="flash flash-warning">Preview only — this project is not yet published ({{ profile.status }}).</div>
+{% endif %}
+
+<h1>{{ profile.project_name }}</h1>
+<p style="color:var(--color-muted);">{{ profile.tagline }}</p>
+
+{% if profile.video_url %}
+<div class="card">
+    <iframe width="100%" height="360" src="{{ profile.video_url }}" frameborder="0" allowfullscreen></iframe>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>About</h3>
+    <p>{{ profile.description }}</p>
+</div>
+
+{% set scan = profile.latest_compliance_scan %}
+{% if scan and scan.badge_level != "none" %}
+<div class="card">
+    <span class="badge badge-{{ scan.badge_level }}">{{ scan.badge_level }}</span>
+    <p class="hint">
+        This badge reflects criteria met as of {{ scan.scan_date.strftime('%Y-%m-%d') }}.
+        It is not a general guarantee of security or ongoing compliance.
+    </p>
+</div>
+{% endif %}
+
+{% set can_accept_payments = profile.subscription and profile.subscription.has_feature("payments") %}
+{% if profile.funding_goal_text and can_accept_payments %}
+<div class="card">
+    <h3>Goal</h3>
+    <p>{{ profile.funding_goal_text }}</p>
+    {% if profile.donation_terms %}
+        <p class="hint">{{ profile.donation_terms }}</p>
+    {% endif %}
+    <a class="btn" href="{{ url_for('payments.donate_redirect', slug=profile.slug) }}">Support this project</a>
+    <p class="hint">You'll be redirected to the founder's own Stripe-hosted payment page. This platform never holds your funds.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Links</h3>
+    <p><a class="btn btn-secondary" href="{{ profile.external_url }}" target="_blank" rel="noopener">Visit project website ↗</a></p>
+    {% if profile.founder_contact_email %}
+        <p>Contact: <a href="mailto:{{ profile.founder_contact_email }}">{{ profile.founder_contact_email }}</a></p>
+    {% endif %}
+</div>
+
+{% if profile.subscription and profile.subscription.has_feature("ai_pitch") %}
+<div id="pitch-chat-widget">
+    <h3>Ask the project assistant</h3>
+    <div id="pitch-chat-log"></div>
+    <form id="pitch-chat-form" data-slug="{{ profile.slug }}">
+        <input type="text" id="pitch-chat-input" placeholder="Ask a question about this project...">
+        <button class="btn btn-sm" type="submit">Send</button>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Startup Showcase — Discover projects{% endblock %}
+{% block content %}
+<h1>Discover projects</h1>
+
+<div class="filters">
+    <a href="{{ url_for('marketplace.index') }}" class="{{ 'active' if not active_category and not active_stage }}">All</a>
+    {% for cat in categories %}
+        <a href="{{ url_for('marketplace.index', category=cat.slug) }}"
+           class="{{ 'active' if active_category == cat.slug }}">{{ cat.name(current_locale) }}</a>
+    {% endfor %}
+</div>
+<div class="filters">
+    {% for stage in stages %}
+        <a href="{{ url_for('marketplace.index', stage=stage) }}"
+           class="{{ 'active' if active_stage == stage }}">{{ stage|title }}</a>
+    {% endfor %}
+</div>
+
+{% if profiles %}
+<div class="grid">
+    {% for p in profiles %}
+    <a class="project-card card" href="{{ url_for('marketplace.project_detail', slug=p.slug) }}">
+        {% if p.banner_image_path %}
+            <img src="{{ url_for('static', filename=p.banner_image_path) }}" alt="{{ p.project_name }}">
+        {% else %}
+            <img src="https://via.placeholder.com/400x200?text={{ p.project_name }}" alt="{{ p.project_name }}">
+        {% endif %}
+        <div class="card-body">
+            <h3>{{ p.project_name }}</h3>
+            <p>{{ p.tagline }}</p>
+            {% set scan = p.latest_compliance_scan %}
+            {% if scan and scan.badge_level != "none" %}
+                <span class="badge badge-{{ scan.badge_level }}">{{ scan.badge_level }}</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p style="color:var(--color-muted);">No projects published yet.</p>
+{% endif %}
+{% endblock %}
