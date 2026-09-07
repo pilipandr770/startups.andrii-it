@@ -78,8 +78,10 @@ def edit_profile():
         if deck_path:
             profile.pitch_deck_path = deck_path
 
-        # Any edit after publication goes back through moderation.
-        if profile.status in (ProfileStatus.DRAFT, ProfileStatus.REJECTED):
+        # Any edit to a published (or previously rejected) profile goes back
+        # through moderation — re-review on every content change. DRAFT and
+        # PENDING_REVIEW are left as-is (already unreviewed / awaiting review).
+        if profile.status in (ProfileStatus.PUBLISHED, ProfileStatus.REJECTED):
             profile.status = ProfileStatus.DRAFT
 
         if is_new:
