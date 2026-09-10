@@ -15,6 +15,17 @@ from app.models import (
 )
 
 
+# Fields a moderator actually reviews (see admin/queue.html) — changing any
+# of these on a published listing sends it back through moderation. Cosmetic
+# fields (banner, pitch deck, tagline, description, video, category/stage)
+# are deliberately excluded; see docs/ROADMAP.md item 13 and
+# docs/ARCHITECTURE.md, "Roles and moderation".
+SUBSTANTIVE_REVIEW_FIELDS = [
+    "project_name", "external_url", "funding_goal_text", "funding_goal_amount_cents",
+    "donation_terms", "founder_stripe_payment_link", "founder_contact_email",
+]
+
+
 def slugify(text):
     text = re.sub(r"[^\w\s-]", "", text.lower()).strip()
     return re.sub(r"[\s_-]+", "-", text)
@@ -85,6 +96,14 @@ def edit_profile():
             profile = FounderProfile(user_id=current_user.id, slug=slug)
             db.session.add(profile)
 
+        # Snapshot the fields that actually matter for re-review before
+        # overwriting them — see the re-review check below. Cosmetic changes
+        # (banner, pitch deck, tagline, description, video, category/stage)
+        # deliberately do NOT force a published listing back to draft; only
+        # the fields a moderator actually checks do (see admin/queue.html
+        # and docs/ARCHITECTURE.md, "Roles and moderation").
+        old_values = None if is_new else {f: getattr(profile, f) for f in SUBSTANTIVE_REVIEW_FIELDS}
+
         profile.project_name = form.project_name.data
         profile.tagline = form.tagline.data
         profile.description = form.description.data
@@ -111,11 +130,18 @@ def edit_profile():
             delete_uploaded_file(profile.pitch_deck_path)  # old file, being replaced
             profile.pitch_deck_path = deck_path
 
-        # Any edit to a published (or previously rejected) profile goes back
-        # through moderation — re-review on every content change. DRAFT and
-        # PENDING_REVIEW are left as-is (already unreviewed / awaiting review).
-        if profile.status in (ProfileStatus.PUBLISHED, ProfileStatus.REJECTED):
+        # A published listing only goes back through moderation if something
+        # a moderator actually cares about changed (name, link, funding
+        # claims, donation terms/link, contact) — not for a new banner or
+        # pitch deck. A rejected listing always goes back to draft on any
+        # edit, since any save is the founder signaling "I've addressed it."
+        # DRAFT and PENDING_REVIEW are left as-is (already unreviewed /
+        # awaiting review).
+        if profile.status == ProfileStatus.REJECTED:
             profile.status = ProfileStatus.DRAFT
+        elif profile.status == ProfileStatus.PUBLISHED and old_values is not None:
+            if any(getattr(profile, f) != old_values[f] for f in SUBSTANTIVE_REVIEW_FIELDS):
+                profile.status = ProfileStatus.DRAFT
 
         if is_new:
             db.session.flush()

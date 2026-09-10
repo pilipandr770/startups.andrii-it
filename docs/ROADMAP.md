@@ -52,9 +52,9 @@ based on dependencies, not a schedule.
 
 ## Later / only if the model proves out
 
-13. Revisit whether editing a published profile should always force
-    re-review, or only for substantive changes (name, link, funding
-    claims) — see the rough edge noted in `STATE.md`.
+13. ~~Revisit whether editing a published profile should always force
+    re-review, or only for substantive changes~~ — done (2026-09-10):
+    only substantive fields trigger re-review now, see `ARCHITECTURE.md`.
 14. Search, pagination, image optimization — once catalog size actually
     needs them.
 15. Email notifications for moderation decisions and subscription events.

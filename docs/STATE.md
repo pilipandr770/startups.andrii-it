@@ -145,10 +145,11 @@ the code right now.
 
 ## Known rough edges worth knowing about
 
-- `edit_profile` resets a published profile to `draft` on ANY edit,
-  including trivial ones (fixing a typo). This is safe-by-default but may
-  feel heavy-handed once you have real founders — consider whether minor
-  edits should skip re-review (see `ROADMAP.md`).
+- ~~`edit_profile` resets a published profile to `draft` on ANY edit~~ —
+  fixed 2026-09-10: only resets on substantive field changes now (see
+  `ARCHITECTURE.md`, "Roles and moderation"). Found via real use — a
+  founder uploading a new pitch deck PDF unpublished their whole listing,
+  which read as a bug even though it was the documented original behavior.
 - The chatbot widget's conversation history is kept client-side only (in a
   JS variable) — refreshing the page loses it. Fine for an MVP.
 - No pagination on the marketplace grid or moderation queue — fine at

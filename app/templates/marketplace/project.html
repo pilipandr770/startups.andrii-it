@@ -20,6 +20,14 @@
     <p>{{ profile.description }}</p>
 </div>
 
+{% if profile.pitch_deck_path %}
+<div class="card">
+    <h3>Pitch deck</h3>
+    <a class="btn" href="{{ url_for('static', filename=profile.pitch_deck_path) }}" target="_blank" rel="noopener">View pitch deck (PDF) ↗</a>
+    <p class="hint">Opens in your browser — no download needed.</p>
+</div>
+{% endif %}
+
 {% set scan = profile.latest_compliance_scan %}
 {% if scan and scan.badge_level != "none" %}
 <div class="card">
@@ -73,9 +81,6 @@
 <div class="card">
     <h3>Links</h3>
     <p><a class="btn btn-secondary" href="{{ profile.external_url }}" target="_blank" rel="noopener">Visit project website ↗</a></p>
-    {% if profile.pitch_deck_path %}
-        <p><a class="btn btn-secondary" href="{{ url_for('static', filename=profile.pitch_deck_path) }}" target="_blank" rel="noopener">Download pitch deck (PDF) ↓</a></p>
-    {% endif %}
     {% if profile.founder_contact_email %}
         <p>Contact: <a href="mailto:{{ profile.founder_contact_email }}">{{ profile.founder_contact_email }}</a></p>
     {% endif %}

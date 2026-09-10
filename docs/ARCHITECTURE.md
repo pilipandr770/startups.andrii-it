@@ -88,11 +88,16 @@ an unclear "invest in us" framing does not.
 
 Every new listing starts in `draft`, moves to `pending_review` when the
 founder submits it, and only becomes publicly visible once an admin
-approves it (`published`). Any edit to a published profile currently
-resets it back to `draft` — see `app/founder/routes.py::edit_profile` —
-so re-review happens on every content change. This is a deliberate
-starting point for a manual-moderation-only MVP; revisit if it creates too
-much re-review overhead as the catalog grows (see `ROADMAP.md`).
+approves it (`published`). Editing a published profile resets it back to
+`draft` only if a field a moderator actually reviews changed — name,
+external link, funding claims, donation terms, payment link, contact email
+(see `SUBSTANTIVE_REVIEW_FIELDS` in `app/founder/routes.py::edit_profile`).
+A new banner, pitch deck, tagline, description, video, or category/stage
+change does **not** force re-review — those aren't what the anti-scam
+moderation check (`admin/queue.html`) is actually looking at. A rejected
+profile always goes back to `draft` on any edit (the founder saving at all
+signals "I've addressed it"). This was originally "any edit at all", which
+turned out to be real friction in practice — see `ROADMAP.md` item 13.
 
 ## Directory structure
 
