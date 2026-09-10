@@ -33,6 +33,10 @@
     </div>
     <div class="field">{{ form.funding_goal_text.label }}{{ form.funding_goal_text() }}</div>
     <div class="field">
+        {{ form.funding_goal_amount.label }}{{ form.funding_goal_amount() }}
+        {% for err in form.funding_goal_amount.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+    </div>
+    <div class="field">
         {{ form.donation_terms.label }}{{ form.donation_terms() }}
         {% for err in form.donation_terms.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
     </div>

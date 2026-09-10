@@ -51,6 +51,10 @@ class FounderProfile(db.Model):
     # Donation/support terms — must state clearly this is not equity/investment
     # unless explicitly and separately structured. See docs/ARCHITECTURE.md.
     funding_goal_text = db.Column(db.String(300), nullable=True)
+    # Optional structured amount (EUR cents) alongside the free-text goal above
+    # — powers the Kickstarter-style progress bar. Free-text stays the primary
+    # field since not every founder wants a numeric target.
+    funding_goal_amount_cents = db.Column(db.Integer, nullable=True)
     donation_terms = db.Column(db.Text, nullable=True)
     founder_stripe_payment_link = db.Column(db.String(500), nullable=True)
     founder_contact_email = db.Column(db.String(255), nullable=True)
@@ -73,6 +77,10 @@ class FounderProfile(db.Model):
     subscription = db.relationship(
         "Subscription", backref="founder_profile", uselist=False, cascade="all, delete-orphan"
     )
+    donations = db.relationship(
+        "Donation", backref="founder_profile", cascade="all, delete-orphan",
+        order_by="Donation.donated_on.desc()",
+    )
 
     @property
     def latest_compliance_scan(self):
@@ -81,6 +89,22 @@ class FounderProfile(db.Model):
     @property
     def is_visible_to_public(self):
         return self.status == ProfileStatus.PUBLISHED
+
+    @property
+    def total_raised_cents(self):
+        return sum(d.amount_cents for d in self.donations)
+
+    @property
+    def supporter_count(self):
+        return len(self.donations)
+
+    @property
+    def funding_progress_percent(self):
+        """None if no numeric goal was set — callers should skip the
+        progress bar entirely in that case rather than show 0%."""
+        if not self.funding_goal_amount_cents:
+            return None
+        return min(100, round(self.total_raised_cents / self.funding_goal_amount_cents * 100))
 
     def __repr__(self):
         return f"<FounderProfile {self.slug} ({self.status})>"

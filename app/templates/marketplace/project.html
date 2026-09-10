@@ -32,15 +32,41 @@
 {% endif %}
 
 {% set can_accept_payments = profile.subscription and profile.subscription.has_feature("payments") %}
-{% if profile.funding_goal_text and can_accept_payments %}
+{% if can_accept_payments and (profile.funding_goal_text or profile.supporter_count) %}
 <div class="card">
     <h3>Goal</h3>
-    <p>{{ profile.funding_goal_text }}</p>
+    {% if profile.funding_goal_text %}<p>{{ profile.funding_goal_text }}</p>{% endif %}
     {% if profile.donation_terms %}
         <p class="hint">{{ profile.donation_terms }}</p>
     {% endif %}
+
+    {% if profile.supporter_count %}
+    <p class="raised-line">
+        <strong>{{ "%.2f"|format(profile.total_raised_cents / 100) }} EUR</strong> raised
+        from <strong>{{ profile.supporter_count }}</strong> supporter{{ "s" if profile.supporter_count != 1 }}
+    </p>
+    {% if profile.funding_progress_percent is not none %}
+    <div class="progress-bar"><div class="progress-bar-fill" style="width:{{ profile.funding_progress_percent }}%;"></div></div>
+    <p class="hint">{{ profile.funding_progress_percent }}% of goal</p>
+    {% endif %}
+    <p class="hint">Reported by the founder — not independently verified by the platform.</p>
+    {% endif %}
+
     <a class="btn" href="{{ url_for('payments.donate_redirect', slug=profile.slug) }}">Support this project</a>
     <p class="hint">You'll be redirected to the founder's own Stripe-hosted payment page. This platform never holds your funds.</p>
+
+    {% if profile.donations %}
+    <div class="supporter-list">
+        <h4>Recent supporters</h4>
+        {% for d in profile.donations[:10] %}
+        <div class="supporter-row">
+            <span>{{ d.supporter_name or "Anonymous" }}</span>
+            <span>{{ d.amount_display }} EUR</span>
+        </div>
+        {% if d.message %}<p class="hint supporter-message">"{{ d.message }}"</p>{% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 

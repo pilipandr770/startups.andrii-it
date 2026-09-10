@@ -1,9 +1,10 @@
+from datetime import date
 from urllib.parse import urlparse
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, TextAreaField, SelectField, URLField
-from wtforms.validators import DataRequired, Length, Optional, URL, ValidationError
+from wtforms import StringField, TextAreaField, SelectField, URLField, DecimalField, DateField
+from wtforms.validators import DataRequired, Length, Optional, URL, ValidationError, NumberRange
 
 from app.models import ProjectStage
 
@@ -67,6 +68,12 @@ class ProfileForm(FlaskForm):
         "Funding / support goal (plain text, e.g. '€5,000 to cover 3 months of dev')",
         validators=[Optional(), Length(max=300)],
     )
+    funding_goal_amount = DecimalField(
+        "Funding goal amount in EUR (optional — a plain number, powers a progress "
+        "bar next to the text above; leave blank to skip the bar)",
+        validators=[Optional(), NumberRange(min=0)],
+        places=2,
+    )
     donation_terms = TextAreaField(
         "What does a supporter get in return? "
         "(Required if you accept donations — must NOT imply equity or profit-share "
@@ -106,3 +113,23 @@ class ChatbotForm(FlaskForm):
         "24/7, in their language, without you needing to be online.",
         validators=[DataRequired(), Length(max=8000)],
     )
+
+
+class DonationForm(FlaskForm):
+    """Logs a supporter contribution the founder saw in their own Stripe
+    dashboard — self-reported, see app/models/donation.py."""
+
+    amount = DecimalField(
+        "Amount (EUR) — what you saw land in your own Stripe account",
+        validators=[DataRequired(), NumberRange(min=0.01)],
+        places=2,
+    )
+    supporter_name = StringField(
+        "Supporter name (optional — leave blank to show as Anonymous)",
+        validators=[Optional(), Length(max=120)],
+    )
+    message = StringField(
+        "Message from the supporter (optional)",
+        validators=[Optional(), Length(max=280)],
+    )
+    donated_on = DateField("Date", validators=[DataRequired()], default=date.today)

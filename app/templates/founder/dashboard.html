@@ -23,6 +23,9 @@
     <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
         <a class="btn btn-secondary" href="{{ url_for('founder.edit_profile') }}">Edit profile</a>
         <a class="btn btn-secondary" href="{{ url_for('founder.chatbot_settings') }}">Configure pitch bot</a>
+        {% if profile.subscription and profile.subscription.has_feature("payments") %}
+            <a class="btn btn-secondary" href="{{ url_for('founder.supporters') }}">Manage supporters</a>
+        {% endif %}
         {% if profile.is_visible_to_public %}
             <a class="btn btn-secondary" href="{{ url_for('marketplace.project_detail', slug=profile.slug) }}">View public page</a>
         {% endif %}
@@ -117,6 +120,9 @@
             <a href="https://dashboard.stripe.com/payment-links/create" target="_blank" rel="noopener">dashboard.stripe.com/payment-links/create</a>.</li>
         <li>Paste the resulting stripe.com link, your legal entity name, and your donation terms into your
             <a href="{{ url_for('founder.edit_profile') }}">profile</a>, then submit for review.</li>
+        <li>Whenever a supporter pays, log it under
+            <a href="{{ url_for('founder.supporters') }}">Manage supporters</a> — that's what shows the
+            running total and supporter list on your public page and in the catalog.</li>
     </ol>
     <p class="hint">
         Stripe's own processing fees apply to your Stripe account, not ours — we never take a cut of

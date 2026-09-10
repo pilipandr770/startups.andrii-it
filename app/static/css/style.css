@@ -138,6 +138,17 @@ form .hint { font-size: 0.8rem; color: var(--color-muted); margin-top: 4px; }
 }
 .cta-band h2 { margin-top: 0; }
 
+/* Supporters / fundraising progress */
+.raised-line { margin: 12px 0 4px; font-size: 0.98rem; }
+.progress-bar { height: 8px; border-radius: 999px; background: var(--color-border); overflow: hidden; margin: 6px 0; }
+.progress-bar-fill { height: 100%; background: var(--color-success); border-radius: 999px; }
+.progress-bar-sm { height: 5px; margin: 4px 0 0; }
+.supporter-list { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--color-border); }
+.supporter-list h4 { margin: 0 0 8px; font-size: 0.9rem; color: var(--color-muted); }
+.supporter-row { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 5px 0; }
+.supporter-message { margin: 0 0 6px; font-style: italic; }
+.card-raised { margin: 6px 0 0; font-size: 0.8rem; color: var(--color-success); }
+
 .site-footer { border-top: 1px solid var(--color-border); padding: 24px 0; color: var(--color-muted); font-size: 0.82rem; }
 .disclaimer { max-width: 700px; }
 

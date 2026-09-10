@@ -4,6 +4,7 @@ from app.models.founder_profile import FounderProfile, ProfileStatus, ProjectSta
 from app.models.chatbot_config import ChatbotConfig
 from app.models.compliance_scan import ComplianceScan, BadgeLevel
 from app.models.subscription import Subscription, SubscriptionPlan, SubscriptionTier, SubscriptionStatus
+from app.models.donation import Donation
 
 __all__ = [
     "User", "UserRole",
@@ -12,4 +13,5 @@ __all__ = [
     "ChatbotConfig",
     "ComplianceScan", "BadgeLevel",
     "Subscription", "SubscriptionPlan", "SubscriptionTier", "SubscriptionStatus",
+    "Donation",
 ]

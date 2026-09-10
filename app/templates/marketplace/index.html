@@ -33,6 +33,14 @@
             {% if scan and scan.badge_level != "none" %}
                 <span class="badge badge-{{ scan.badge_level }}">{{ scan.badge_level }}</span>
             {% endif %}
+            {% if p.subscription and p.subscription.has_feature("payments") and p.supporter_count %}
+            <p class="card-raised">
+                {{ "%.0f"|format(p.total_raised_cents / 100) }} EUR raised · {{ p.supporter_count }} supporter{{ "s" if p.supporter_count != 1 }}
+            </p>
+            {% if p.funding_progress_percent is not none %}
+            <div class="progress-bar progress-bar-sm"><div class="progress-bar-fill" style="width:{{ p.funding_progress_percent }}%;"></div></div>
+            {% endif %}
+            {% endif %}
         </div>
     </a>
     {% endfor %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Supporters — Startup Showcase{% endblock %}
+{% block content %}
+<h2>Supporters</h2>
+<p class="hint">
+    We never see your Stripe account — log what you saw land there yourself.
+    This total and list are shown on your public page and in the catalog,
+    clearly marked as reported by you, not verified by the platform.
+</p>
+
+<div class="card">
+    <h3>Log a new contribution</h3>
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">{{ form.amount.label }}{{ form.amount() }}</div>
+        <div class="field">{{ form.supporter_name.label }}{{ form.supporter_name() }}</div>
+        <div class="field">{{ form.message.label }}{{ form.message() }}</div>
+        <div class="field">{{ form.donated_on.label }}{{ form.donated_on() }}</div>
+        <button class="btn" type="submit">Add</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>
+        {{ "%.2f"|format(profile.total_raised_cents / 100) }} EUR raised
+        from {{ profile.supporter_count }} supporter{{ "s" if profile.supporter_count != 1 }}
+    </h3>
+    {% if profile.donations %}
+    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+        <thead>
+            <tr style="text-align:left;color:var(--color-muted);font-size:0.85rem;">
+                <th style="padding:6px 0;">Date</th>
+                <th style="padding:6px 0;">Supporter</th>
+                <th style="padding:6px 0;">Amount</th>
+                <th style="padding:6px 0;">Message</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in profile.donations %}
+            <tr style="border-top:1px solid var(--color-border);">
+                <td style="padding:8px 0;font-size:0.9rem;">{{ d.donated_on.strftime('%Y-%m-%d') }}</td>
+                <td style="padding:8px 0;font-size:0.9rem;">{{ d.supporter_name or "Anonymous" }}</td>
+                <td style="padding:8px 0;font-size:0.9rem;">{{ d.amount_display }} EUR</td>
+                <td style="padding:8px 0;font-size:0.9rem;color:var(--color-muted);">{{ d.message or "" }}</td>
+                <td style="padding:8px 0;text-align:right;">
+                    <form method="post" action="{{ url_for('founder.delete_supporter', donation_id=d.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="hint">No supporters logged yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -7,9 +7,12 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from app.founder import bp
-from app.founder.forms import ProfileForm, ChatbotForm
+from app.founder.forms import ProfileForm, ChatbotForm, DonationForm
 from app.extensions import db
-from app.models import FounderProfile, ChatbotConfig, Category, ProfileStatus, Subscription
+from app.models import (
+    FounderProfile, ChatbotConfig, Category, ProfileStatus, Subscription,
+    SubscriptionTier, Donation,
+)
 
 
 def slugify(text):
@@ -44,6 +47,8 @@ def edit_profile():
     form.category_id.choices = [(c.id, c.name_en) for c in Category.query.order_by(Category.name_en)]
     if request.method == "GET":
         form.legal_entity_name.data = current_user.legal_entity_name
+        if profile and profile.funding_goal_amount_cents:
+            form.funding_goal_amount.data = profile.funding_goal_amount_cents / 100
 
     if form.validate_on_submit():
         is_new = profile is None
@@ -66,6 +71,9 @@ def edit_profile():
         profile.video_url = form.video_url.data
         current_user.legal_entity_name = form.legal_entity_name.data.strip() or None
         profile.funding_goal_text = form.funding_goal_text.data
+        profile.funding_goal_amount_cents = (
+            int(form.funding_goal_amount.data * 100) if form.funding_goal_amount.data else None
+        )
         profile.donation_terms = form.donation_terms.data
         profile.founder_stripe_payment_link = form.founder_stripe_payment_link.data
         profile.founder_contact_email = form.founder_contact_email.data
@@ -132,3 +140,48 @@ def chatbot_settings():
         return redirect(url_for("founder.dashboard"))
 
     return render_template("founder/chatbot.html", form=form, profile=profile)
+
+
+@bp.route("/supporters", methods=["GET", "POST"])
+@login_required
+def supporters():
+    """Founder-side log of supporter contributions. Self-reported — see
+    app/models/donation.py for why this can't be pulled from Stripe
+    automatically. Gated behind the Payments tier, same as the public
+    donate button itself."""
+    profile = current_user.founder_profile
+    if not profile:
+        flash("Create your project profile first.", "warning")
+        return redirect(url_for("founder.edit_profile"))
+
+    if not (profile.subscription and profile.subscription.has_feature(SubscriptionTier.PAYMENTS)):
+        flash("Upgrade to the Payments tier to log and show supporters.", "warning")
+        return redirect(url_for("founder.dashboard"))
+
+    form = DonationForm()
+    if form.validate_on_submit():
+        db.session.add(Donation(
+            founder_profile_id=profile.id,
+            amount_cents=int(form.amount.data * 100),
+            supporter_name=(form.supporter_name.data or "").strip() or None,
+            message=(form.message.data or "").strip() or None,
+            donated_on=form.donated_on.data,
+        ))
+        db.session.commit()
+        flash("Supporter logged.", "success")
+        return redirect(url_for("founder.supporters"))
+
+    return render_template("founder/supporters.html", form=form, profile=profile)
+
+
+@bp.route("/supporters/<int:donation_id>/delete", methods=["POST"])
+@login_required
+def delete_supporter(donation_id):
+    profile = current_user.founder_profile
+    donation = Donation.query.get_or_404(donation_id)
+    if not profile or donation.founder_profile_id != profile.id:
+        abort(404)
+    db.session.delete(donation)
+    db.session.commit()
+    flash("Entry removed.", "info")
+    return redirect(url_for("founder.supporters"))
