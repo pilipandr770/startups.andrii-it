@@ -15,13 +15,29 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Diagnostics
+        run: |
+          echo "::notice::python=$(python --version), which pytest=$(which pytest || echo NOT_FOUND)"
+          python -m pytest --version || echo "::error::python -m pytest --version failed with exit $?"
+          pip show pytest || echo "::error::pip show pytest failed"
+
       - name: Run tests
-        run: pytest tests/ -v
+        run: |
+          set +e
+          pytest tests/ -v --tb=short > pytest_output.log 2>&1
+          code=$?
+          echo "::notice::pytest exited with code $code, $(wc -l < pytest_output.log) lines of output"
+          if [ $code -ne 0 ]; then
+            grep -n -E "Error|error|ERROR|Traceback|Interrupted" pytest_output.log | head -n 15 | while IFS= read -r line; do
+              echo "::error::${line:0:400}"
+            done
+            tail -n 15 pytest_output.log | while IFS= read -r line; do
+              echo "::error::TAIL: ${line:0:400}"
+            done
+          fi
+          cat pytest_output.log
+          exit $code
