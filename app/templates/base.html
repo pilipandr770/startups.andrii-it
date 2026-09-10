@@ -20,6 +20,7 @@
                     {% else %}
                         <a href="{{ url_for('founder.dashboard') }}">Dashboard</a>
                     {% endif %}
+                    <a href="{{ url_for('auth.account') }}">Account</a>
                     <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}">Login</a>

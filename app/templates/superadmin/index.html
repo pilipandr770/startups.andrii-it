@@ -41,6 +41,12 @@
             <button class="btn btn-sm btn-secondary" type="submit">Revoke subscription</button>
         </form>
         {% endif %}
+
+        <form method="post" action="{{ url_for('superadmin.delete_profile', profile_id=p.id) }}"
+              onsubmit="return confirm('Permanently delete this project listing? This cannot be undone.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-danger" type="submit">Delete project</button>
+        </form>
     </div>
 </div>
 {% endfor %}
@@ -49,12 +55,21 @@
 {% for u in users %}
 <div class="card">
     <p>{{ u.email }} — role: <strong>{{ u.role }}</strong></p>
-    {% if u.role == "founder" %}
-    <form method="post" action="{{ url_for('superadmin.promote_to_admin', user_id=u.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-sm btn-secondary" type="submit">Promote to admin</button>
-    </form>
-    {% endif %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        {% if u.role == "founder" %}
+        <form method="post" action="{{ url_for('superadmin.promote_to_admin', user_id=u.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Promote to admin</button>
+        </form>
+        {% endif %}
+        {% if u.id != current_user.id %}
+        <form method="post" action="{{ url_for('superadmin.delete_user', user_id=u.id) }}"
+              onsubmit="return confirm('Permanently delete this account and all its data ({{ u.email }})? This cannot be undone.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-danger" type="submit">Delete account</button>
+        </form>
+        {% endif %}
+    </div>
 </div>
 {% endfor %}
 {% endblock %}

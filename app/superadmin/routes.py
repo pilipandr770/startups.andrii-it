@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from flask import render_template, redirect, url_for, flash, request, abort
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app.superadmin import bp
 from app.decorators import superadmin_required
@@ -98,4 +98,38 @@ def promote_to_admin(user_id):
     user.role = UserRole.ADMIN
     db.session.commit()
     flash(f"{user.email} is now an admin.", "success")
+    return redirect(url_for("superadmin.index"))
+
+
+@bp.route("/profile/<int:profile_id>/delete", methods=["POST"])
+@login_required
+@superadmin_required
+def delete_profile(profile_id):
+    """Removes a listing entirely — e.g. cleaning up a test/abandoned
+    project. The owner's account is untouched; use delete_user for that."""
+    profile = FounderProfile.query.get_or_404(profile_id)
+    project_name = profile.project_name
+    db.session.delete(profile)
+    db.session.commit()
+    flash(f"Deleted project: {project_name}", "warning")
+    return redirect(url_for("superadmin.index"))
+
+
+@bp.route("/user/<int:user_id>/delete", methods=["POST"])
+@login_required
+@superadmin_required
+def delete_user(user_id):
+    """Deletes an account and everything tied to it (listing, chatbot
+    config, compliance scans, subscription, supporters log). Refuses to
+    delete your own logged-in account here to avoid a self-inflicted
+    lockout — use the regular account-settings page for that."""
+    if user_id == current_user.id:
+        flash("Use Account settings to delete your own account.", "warning")
+        return redirect(url_for("superadmin.index"))
+
+    user = User.query.get_or_404(user_id)
+    email = user.email
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Deleted account: {email}", "warning")
     return redirect(url_for("superadmin.index"))

@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app.auth import bp
-from app.auth.forms import RegisterForm, LoginForm
+from app.auth.forms import RegisterForm, LoginForm, ChangePasswordForm, DeleteAccountForm
 from app.extensions import db
 from app.models import User, UserRole
 
@@ -62,4 +62,39 @@ def login():
 def logout():
     logout_user()
     flash("You have been logged out.", "info")
+    return redirect(url_for("marketplace.home"))
+
+
+@bp.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        current_user.set_password(form.new_password.data)
+        db.session.commit()
+        flash("Password changed.", "success")
+        return redirect(url_for("auth.account"))
+
+    delete_form = DeleteAccountForm()
+    return render_template("auth/account.html", form=form, delete_form=delete_form)
+
+
+@bp.route("/account/delete", methods=["POST"])
+@login_required
+def delete_account():
+    form = DeleteAccountForm()
+    if not form.validate_on_submit():
+        for error in form.password.errors:
+            flash(error, "danger")
+        return redirect(url_for("auth.account"))
+
+    # Resolve to a concrete row and delete it BEFORE logout_user(): current_user
+    # is a LocalProxy that re-evaluates against the session on every access,
+    # so using it after logout_user() clears that session would silently
+    # operate on an anonymous user instead of the one we meant to delete.
+    user = User.query.get(current_user.id)
+    db.session.delete(user)  # cascades: profile, chatbot config, scans, subscription, donations
+    db.session.commit()
+    logout_user()
+    flash("Your account and all associated data have been deleted.", "info")
     return redirect(url_for("marketplace.home"))

@@ -103,6 +103,22 @@ def edit_profile():
     return render_template("founder/edit_profile.html", form=form, profile=profile)
 
 
+@bp.route("/project/delete", methods=["POST"])
+@login_required
+def delete_project():
+    """Deletes the listing only — the account stays, so a founder can start
+    a new one later. Cascades to chatbot config, compliance scans,
+    subscription, and the supporters log (see FounderProfile relationships)."""
+    profile = current_user.founder_profile
+    if not profile:
+        abort(404)
+    project_name = profile.project_name
+    db.session.delete(profile)
+    db.session.commit()
+    flash(f"Deleted: {project_name}.", "info")
+    return redirect(url_for("founder.dashboard"))
+
+
 @bp.route("/profile/submit", methods=["POST"])
 @login_required
 def submit_for_review():

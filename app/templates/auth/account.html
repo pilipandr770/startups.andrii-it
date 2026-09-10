@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Account settings — Startup Showcase{% endblock %}
+{% block content %}
+<h2>Account settings</h2>
+<p class="hint">Signed in as {{ current_user.email }}</p>
+
+<div class="card" style="max-width:480px;">
+    <h3>Change password</h3>
+    <form method="post" action="{{ url_for('auth.account') }}" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="field">
+            {{ form.current_password.label }}{{ form.current_password() }}
+            {% for err in form.current_password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+        </div>
+        <div class="field">
+            {{ form.new_password.label }}{{ form.new_password() }}
+            <p class="hint">At least 8 characters.</p>
+            {% for err in form.new_password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+        </div>
+        <div class="field">
+            {{ form.confirm_new_password.label }}{{ form.confirm_new_password() }}
+            {% for err in form.confirm_new_password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+        </div>
+        <button class="btn" type="submit">Change password</button>
+    </form>
+</div>
+
+{% if current_user.founder_profile %}
+<div class="card" style="max-width:480px;">
+    <h3>Delete project</h3>
+    <p class="hint">
+        Removes your listing "{{ current_user.founder_profile.project_name }}" — the public page,
+        compliance scans, AI pitch config, and logged supporters. Your account stays, so you can
+        create a new listing later.
+    </p>
+    <form method="post" action="{{ url_for('founder.delete_project') }}"
+          onsubmit="return confirm('Permanently delete your project listing? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger btn-sm" type="submit">Delete project</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card" style="max-width:480px;">
+    <h3>Delete account</h3>
+    <p class="hint">
+        Permanently deletes your account and everything tied to it — project listing,
+        AI pitch config, compliance scans, subscription record, and logged supporters.
+        This cannot be undone.
+    </p>
+    <form method="post" action="{{ url_for('auth.delete_account') }}"
+          onsubmit="return confirm('Permanently delete your account and all its data? This cannot be undone.');">
+        {{ delete_form.hidden_tag() }}
+        <div class="field">
+            {{ delete_form.password.label }}{{ delete_form.password() }}
+            {% for err in delete_form.password.errors %}<p class="hint" style="color:var(--color-danger);">{{ err }}</p>{% endfor %}
+        </div>
+        <button class="btn btn-danger" type="submit">Delete my account</button>
+    </form>
+</div>
+{% endblock %}
