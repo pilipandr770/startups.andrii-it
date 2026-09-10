@@ -27,9 +27,16 @@ def client(app):
     return app.test_client()
 
 
-def test_marketplace_index_loads(client):
+def test_landing_page_loads(client):
     resp = client.get("/")
     assert resp.status_code == 200
+    assert b"List your project" in resp.data
+
+
+def test_marketplace_catalog_loads(client):
+    resp = client.get("/marketplace")
+    assert resp.status_code == 200
+    assert b"Discover projects" in resp.data
 
 
 def test_register_and_login(app, client):

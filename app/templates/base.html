@@ -9,7 +9,7 @@
 <body>
     <header class="site-header">
         <div class="container header-inner">
-            <a href="{{ url_for('marketplace.index') }}" class="logo">Startup Showcase</a>
+            <a href="{{ url_for('marketplace.home') }}" class="logo">Startup Showcase</a>
             <nav>
                 <a href="{{ url_for('marketplace.index') }}">Marketplace</a>
                 {% if current_user.is_authenticated %}

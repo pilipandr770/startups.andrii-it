@@ -5,6 +5,15 @@ from app.models import FounderProfile, Category, ProfileStatus, ProjectStage
 
 
 @bp.route("/")
+def home():
+    """Marketing landing page — explains what this is and for whom, with a
+    CTA into either side of the marketplace. The actual catalog lives at
+    marketplace.index (/marketplace)."""
+    published_count = FounderProfile.query.filter_by(status=ProfileStatus.PUBLISHED).count()
+    return render_template("marketplace/home.html", published_count=published_count)
+
+
+@bp.route("/marketplace")
 def index():
     category_slug = request.args.get("category")
     stage = request.args.get("stage")

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Startup Showcase — Get discovered, without becoming a full-time marketer{% endblock %}
+{% block content %}
+
+<section class="hero">
+    <h1>Get your startup discovered — without becoming a full-time marketer.</h1>
+    <p class="hero-sub">
+        A curated marketplace where builders list live projects, an AI assistant pitches
+        them 24/7 in any language, and visitors can discover, ask questions, and support
+        real projects safely.
+    </p>
+    <div class="hero-cta">
+        <a class="btn" href="{{ url_for('auth.register') }}">List your project</a>
+        <a class="btn btn-secondary" href="{{ url_for('marketplace.index') }}">Browse projects{% if published_count %} ({{ published_count }} live){% endif %}</a>
+    </div>
+</section>
+
+<section class="audience-grid">
+    <div class="card audience-card">
+        <h2>For founders &amp; builders</h2>
+        <p class="hint">
+            You built something real — maybe with AI-assisted "vibe coding" tools — but
+            you don't have time to market it, pitch in English at 3am, or be online
+            around the clock.
+        </p>
+        <ul class="check-list">
+            <li>A public listing set up in about ten minutes</li>
+            <li>Your own AI pitch assistant answers visitor questions 24/7, in their
+                language — the language and timezone barrier disappears</li>
+            <li>Optional criteria-based compliance/security badge to build trust</li>
+            <li>You keep full control: your own site, your own legal pages, your own
+                Stripe account for anyone who wants to support you</li>
+            <li>Flat monthly fee for the listing — never a cut of what you raise</li>
+        </ul>
+        <a class="btn btn-secondary" href="{{ url_for('auth.register') }}">List your project →</a>
+    </div>
+
+    <div class="card audience-card">
+        <h2>For investors &amp; supporters</h2>
+        <p class="hint">
+            You want to find interesting, real projects — not sift through noise or
+            wonder if a "donate" button is a scam.
+        </p>
+        <ul class="check-list">
+            <li>Every listing is manually reviewed by a person before it goes live —
+                no bots, no auto-publish</li>
+            <li>Filter by category and stage to find what actually interests you</li>
+            <li>Ask each project's AI assistant anything, any time, in your own
+                language — get a real answer instead of a contact-form black hole</li>
+            <li>Support a project directly through the founder's own verified Stripe
+                link — this platform never touches or holds the funds</li>
+        </ul>
+        <a class="btn btn-secondary" href="{{ url_for('marketplace.index') }}">Browse projects →</a>
+    </div>
+</section>
+
+<section class="steps-section">
+    <h2>How it works</h2>
+    <ol class="steps-list">
+        <li><strong>A founder registers</strong> and fills in their dashboard — link,
+            banner, description, funding goal, donation terms, Stripe payment link.</li>
+        <li><strong>They brief their AI pitch assistant</strong> once — the part that
+            actually removes the language barrier and the "founder isn't online"
+            problem.</li>
+        <li><strong>The listing is manually reviewed</strong> before anything goes
+            public — every time, no exceptions.</li>
+        <li><strong>The published card appears</strong> in the catalog, filterable by
+            category and stage.</li>
+        <li><strong>Visitors browse, chat, and verify</strong> — clicking through to
+            the founder's own live site, asking the assistant questions, and
+            optionally supporting the project directly.</li>
+    </ol>
+</section>
+
+<section class="features-section">
+    <h2>Why Startup Showcase</h2>
+    <div class="grid features-grid">
+        <div class="card feature-card">
+            <h3>Human-reviewed, always</h3>
+            <p class="hint">Every listing is checked by a person before it's public. No auto-publish, no bot moderation.</p>
+        </div>
+        <div class="card feature-card">
+            <h3>Never a financial intermediary</h3>
+            <p class="hint">Support goes straight to the founder's own, verified Stripe-hosted link. We never touch, hold, or route the funds.</p>
+        </div>
+        <div class="card feature-card">
+            <h3>Your project stays yours</h3>
+            <p class="hint">We link to your existing site — we never host, mirror, or iframe it. Your Impressum and Datenschutz stay on your own domain.</p>
+        </div>
+        <div class="card feature-card">
+            <h3>An assistant that never sleeps</h3>
+            <p class="hint">Brief it once; it answers visitor questions 24/7, in whatever language they write in.</p>
+        </div>
+        <div class="card feature-card">
+            <h3>Fair, flat pricing</h3>
+            <p class="hint">A subscription for the listing — never a percentage of what you raise. We're not a broker.</p>
+        </div>
+        <div class="card feature-card">
+            <h3>Built on real compliance expertise</h3>
+            <p class="hint">The optional badge reflects specific criteria met as of a given date — never presented as a general security guarantee.</p>
+        </div>
+    </div>
+</section>
+
+<section class="cta-band">
+    <h2>Ready to be found by the right people?</h2>
+    <div class="hero-cta">
+        <a class="btn" href="{{ url_for('auth.register') }}">List your project</a>
+        <a class="btn btn-secondary" href="{{ url_for('marketplace.index') }}">Browse projects</a>
+    </div>
+</section>
+
+{% endblock %}
