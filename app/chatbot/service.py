@@ -66,7 +66,7 @@ def get_pitch_response(founder_profile, user_message, conversation_history=None)
         messages.append({"role": "user", "content": user_message})
 
         response = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-5",
             max_tokens=600,
             system=system_prompt,
             messages=messages,
