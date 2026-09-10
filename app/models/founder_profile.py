@@ -62,6 +62,13 @@ class FounderProfile(db.Model):
     status = db.Column(db.String(20), default=ProfileStatus.DRAFT, index=True)
     rejection_reason = db.Column(db.Text, nullable=True)
 
+    # Explicit opt-in for the deeper "known vulnerabilities" report (CVE
+    # lookups, DNS security records, exposed-file checks) — a paid-tier
+    # perk, gated separately from the free basic_verified scan since it's
+    # a different, higher level of "please go check my stuff" consent. See
+    # app/compliance/scanner.py's deep-scan section.
+    vuln_scan_consent_given_at = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     published_at = db.Column(db.DateTime, nullable=True)

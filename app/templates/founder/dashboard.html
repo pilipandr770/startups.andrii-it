@@ -49,13 +49,27 @@
 <div class="card">
     <h3>Compliance badge</h3>
     {% set scan = profile.latest_compliance_scan %}
+    {% set deep_available = profile.subscription and profile.subscription.is_active %}
     {% if scan %}
         <p>Current: <span class="badge badge-{{ scan.badge_level }}">{{ scan.badge_level }}</span>
         <span class="hint">(scanned {{ scan.scan_date.strftime('%Y-%m-%d %H:%M') }} UTC)</span></p>
         <p class="hint">{{ scan.summary }}</p>
-        {% if scan.findings %}
+        {% set basic_findings = scan.findings | rejectattr("category", "equalto", "deep") | list %}
+        {% set deep_findings = scan.findings | selectattr("category", "equalto", "deep") | list %}
+        {% if basic_findings %}
         <ul class="scan-findings">
-            {% for f in scan.findings %}
+            {% for f in basic_findings %}
+            <li class="finding finding-{{ f.status }}">
+                <span class="finding-icon">{{ {"pass": "✓", "fail": "✗", "warn": "⚠", "info": "ℹ"}[f.status] }}</span>
+                <strong>{{ f.label }}</strong> — {{ f.detail }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if deep_findings %}
+        <h4 style="margin-top:16px;">Known vulnerabilities report <span class="hint">(best-effort — not a penetration test)</span></h4>
+        <ul class="scan-findings">
+            {% for f in deep_findings %}
             <li class="finding finding-{{ f.status }}">
                 <span class="finding-icon">{{ {"pass": "✓", "fail": "✗", "warn": "⚠", "info": "ℹ"}[f.status] }}</span>
                 <strong>{{ f.label }}</strong> — {{ f.detail }}
@@ -70,6 +84,31 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-secondary btn-sm" type="submit">Request basic scan</button>
     </form>
+
+    {% if deep_available %}
+        {% if profile.vuln_scan_consent_given_at %}
+        <p class="hint" style="margin-top:10px;">
+            Vulnerability report enabled (consent given {{ profile.vuln_scan_consent_given_at.strftime('%Y-%m-%d') }}) —
+            your next scan will include it.
+        </p>
+        {% else %}
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--color-border);">
+            <p class="hint">
+                <strong>Included with your subscription:</strong> a best-effort report of publicly known
+                vulnerabilities — software versions checked against the public NVD CVE database, email
+                spoofing protection (SPF/DMARC), and common exposed-config checks (.env, .git). This is
+                <strong>not a penetration test</strong> — no exploitation, no port scanning, only passive
+                checks against your own site plus public database lookups. Requires your consent, since it
+                goes a bit further than the basic scan above.
+            </p>
+            <form method="post" action="{{ url_for('compliance.give_vuln_scan_consent') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-secondary btn-sm" type="submit">I consent — enable the vulnerability report</button>
+            </form>
+        </div>
+        {% endif %}
+    {% endif %}
+
     <p class="hint">
         Automated check of your public site's HTTPS setup and security
         headers (Basic Verified tier only). A deeper NIS2/BSI A5 audit is a

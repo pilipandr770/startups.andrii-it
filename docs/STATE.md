@@ -85,6 +85,31 @@ the code right now.
   by adding a hidden `csrf_token` input to each; worth double-checking any
   *new* plain-HTML form for the same omission going forward.
 
+- **Deep scan / "known vulnerabilities" report** (2026-09-10, same
+  `scanner.py`, `scan_url(..., deep=True)`): an opt-in, subscription-gated
+  perk — explicitly framed as a best-effort report against public data, NOT
+  a penetration test, and deliberately excludes any port scanning (the
+  resolved IP is often shared hosting — scanning its ports would touch
+  other tenants' infrastructure without their consent and risks getting
+  this platform's own Hostinger VPS abuse-reported, per that host's AUP).
+  Adds three passive checks on top of the basic scan, gated behind
+  `FounderProfile.vuln_scan_consent_given_at` (explicit opt-in, separate
+  consent from the free basic scan) plus `subscription.is_active` (any
+  status — trial counts):
+    - software/version fingerprints already visible in the response
+      (Server/X-Powered-By headers, `<meta name="generator">`, common JS
+      filenames like `jquery-3.4.1.min.js`) looked up against the public
+      NVD CVE database (`services.nvd.nist.gov`, no API key — fine at this
+      volume, keyword search so results can be noisy, disclosed as such)
+    - SPF/DMARC DNS TXT records (email spoofing protection)
+    - a short fixed list of sensitive paths (`.env`, `.git/config`, etc.)
+      fetched on the same already-SSRF-validated host
+  Deep findings carry `category="deep"` and never affect score/badge_level
+  — they're shown to the founder only (dashboard), never on the public
+  project page (STATE.md keeps calling this out: never let a compliance
+  signal overclaim — a *lack* of found CVEs must not read as "verified
+  secure", so the report stays private and explicitly best-effort).
+
 - **Docker deployment validated end-to-end** (2026-09-07): built the image
   and ran the full `docker-compose.yml` stack locally (web + Postgres) —
   found and fixed two real bugs in the process that only show up outside

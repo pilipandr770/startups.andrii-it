@@ -23,9 +23,12 @@ from app.compliance.scanner import scan_url, ScanError
 logger = logging.getLogger(__name__)
 
 
-def run_basic_scan(founder_profile):
+def run_basic_scan(founder_profile, deep=False):
+    """deep=True additionally runs the opt-in "known vulnerabilities"
+    report — caller (app/compliance/routes.py) is responsible for checking
+    the subscription + consent gate before passing that."""
     try:
-        result = scan_url(founder_profile.external_url)
+        result = scan_url(founder_profile.external_url, deep=deep)
         badge_level = result.badge_level
         summary = result.summary
         score = result.score
