@@ -10,8 +10,17 @@
     <p>Owner: {{ p.owner.email }} | Subscription:
         {% if p.subscription %}{{ p.subscription.status }} ({{ p.subscription.tier }}/{{ p.subscription.plan }}){% else %}none{% endif %}
     </p>
+    {% if p.url_reputation_status == "flagged" %}
+    <p style="color:var(--color-danger);font-weight:600;">⚠ Link flagged: {{ p.url_reputation_detail }}</p>
+    {% elif p.url_reputation_status %}
+    <p class="hint">Link reputation: {{ p.url_reputation_status }} ({{ p.url_reputation_checked_at.strftime('%Y-%m-%d') }})</p>
+    {% endif %}
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
         <a class="btn btn-sm btn-secondary" href="{{ url_for('marketplace.project_detail', slug=p.slug) }}">View</a>
+        <form method="post" action="{{ url_for('admin.recheck_link_reputation', profile_id=p.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Re-check link safety</button>
+        </form>
 
         {% if p.status != "published" %}
         <form method="post" action="{{ url_for('superadmin.publish', profile_id=p.id) }}">

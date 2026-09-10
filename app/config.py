@@ -51,6 +51,14 @@ class Config:
 
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
+    # Optional — protects marketplace VISITORS by checking a founder's
+    # external_url against malware/phishing reputation databases before
+    # (and periodically after) their listing goes live. URLhaus needs no
+    # key and always runs; these two add more coverage when set. See
+    # app/compliance/url_reputation.py.
+    GOOGLE_SAFE_BROWSING_API_KEY = os.environ.get("GOOGLE_SAFE_BROWSING_API_KEY", "")
+    VIRUSTOTAL_API_KEY = os.environ.get("VIRUSTOTAL_API_KEY", "")
+
     BASE_URL = os.environ.get("BASE_URL", "http://localhost:5000")
 
     SUPERADMIN_EMAIL = os.environ.get("SUPERADMIN_EMAIL", "admin@example.com")
@@ -69,6 +77,10 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
+    # Tests must stay network-free regardless of what a developer's local
+    # .env happens to have configured — see tests/test_url_reputation.py.
+    GOOGLE_SAFE_BROWSING_API_KEY = ""
+    VIRUSTOTAL_API_KEY = ""
 
 
 config_map = {

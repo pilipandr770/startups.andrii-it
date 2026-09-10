@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+from datetime import datetime
 
 from flask import render_template, redirect, url_for, flash, current_app, abort, request
 from flask_login import login_required, current_user
@@ -13,6 +14,7 @@ from app.models import (
     FounderProfile, ChatbotConfig, Category, ProfileStatus, Subscription,
     SubscriptionTier, Donation,
 )
+from app.compliance.url_reputation import check_url_reputation
 
 
 # Fields a moderator actually reviews (see admin/queue.html) — changing any
@@ -182,6 +184,20 @@ def submit_for_review():
         return redirect(url_for("founder.edit_profile"))
 
     profile.status = ProfileStatus.PENDING_REVIEW
+
+    # Check the link's malware/phishing reputation now, so the moderator
+    # sees a fresh result in the queue rather than nothing. This is about
+    # protecting marketplace VISITORS from a bad link, not the founder — see
+    # app/compliance/url_reputation.py. Best-effort: a lookup failure must
+    # never block a legitimate submission.
+    try:
+        status, detail = check_url_reputation(profile.external_url)
+        profile.url_reputation_status = status
+        profile.url_reputation_detail = detail
+        profile.url_reputation_checked_at = datetime.utcnow()
+    except Exception:
+        pass
+
     db.session.commit()
     flash("Submitted for review. We'll email you once it's approved.", "success")
     return redirect(url_for("founder.dashboard"))

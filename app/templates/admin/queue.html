@@ -25,11 +25,37 @@
     <p class="hint">No donation link set.</p>
     {% endif %}
 
-    <div style="display:flex;gap:10px;">
+    {% if p.url_reputation_status == "flagged" %}
+    <p style="color:var(--color-danger);font-weight:600;">
+        ⚠ Link flagged by a malware/phishing reputation check
+        {% if p.url_reputation_checked_at %}(checked {{ p.url_reputation_checked_at.strftime('%Y-%m-%d %H:%M') }} UTC){% endif %}
+    </p>
+    <p class="hint">{{ p.url_reputation_detail }}</p>
+    {% elif p.url_reputation_status == "clean" %}
+    <p class="hint">✓ Link reputation: clean ({{ p.url_reputation_checked_at.strftime('%Y-%m-%d %H:%M') }} UTC)</p>
+    {% elif p.url_reputation_status == "unknown" %}
+    <p class="hint">Link reputation: could not be determined ({{ p.url_reputation_checked_at.strftime('%Y-%m-%d %H:%M') }} UTC).</p>
+    {% else %}
+    <p class="hint">Link reputation: not yet checked.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.recheck_link_reputation', profile_id=p.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-secondary" type="submit">Re-check link safety</button>
+    </form>
+
+    <div style="display:flex;gap:10px;margin-top:10px;">
         <form method="post" action="{{ url_for('admin.approve', profile_id=p.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm" type="submit">Approve</button>
         </form>
+        {% if p.url_reputation_status == "flagged" %}
+        <form method="post" action="{{ url_for('admin.approve', profile_id=p.id) }}"
+              onsubmit="return confirm('Approve despite the flagged link reputation? Only do this if you have verified it is a false positive.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="override_reputation_warning" value="1">
+            <button class="btn btn-sm btn-danger" type="submit">Approve anyway</button>
+        </form>
+        {% endif %}
         <form method="post" action="{{ url_for('admin.reject', profile_id=p.id) }}" style="display:flex;gap:6px;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="reason" placeholder="Rejection reason">

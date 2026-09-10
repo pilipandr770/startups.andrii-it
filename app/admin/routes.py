@@ -7,6 +7,19 @@ from app.admin import bp
 from app.decorators import admin_required
 from app.extensions import db
 from app.models import FounderProfile, ProfileStatus
+from app.compliance.url_reputation import check_url_reputation
+
+
+def _refresh_url_reputation(profile):
+    """Best-effort — a lookup failure must never block moderation."""
+    try:
+        status, detail = check_url_reputation(profile.external_url)
+        profile.url_reputation_status = status
+        profile.url_reputation_detail = detail
+        profile.url_reputation_checked_at = datetime.utcnow()
+        return status
+    except Exception:
+        return profile.url_reputation_status
 
 
 @bp.route("/queue")
@@ -26,6 +39,23 @@ def queue():
 @admin_required
 def approve(profile_id):
     profile = FounderProfile.query.get_or_404(profile_id)
+
+    # Re-check right before publishing — the link could have changed, or
+    # gone bad, since submission. A flagged link doesn't get auto-published;
+    # the moderator has to consciously override (button in admin/queue.html)
+    # after looking at the detail, in case it's a false positive. This is
+    # about protecting marketplace VISITORS from clicking a malicious link.
+    reputation_status = _refresh_url_reputation(profile)
+    if reputation_status == "flagged" and not request.form.get("override_reputation_warning"):
+        db.session.commit()
+        flash(
+            f"Not approved: {profile.project_name}'s link was flagged by a malware/phishing "
+            "reputation check. Review the details in the queue, then use \"Approve anyway\" "
+            "if you're confident this is a false positive.",
+            "danger",
+        )
+        return redirect(url_for("admin.queue"))
+
     profile.status = ProfileStatus.PUBLISHED
     profile.published_at = datetime.utcnow()
     profile.rejection_reason = None
@@ -64,3 +94,20 @@ def suspend(profile_id):
     db.session.commit()
     flash(f"Suspended: {profile.project_name}", "warning")
     return redirect(url_for("admin.queue"))
+
+
+@bp.route("/profile/<int:profile_id>/recheck-link", methods=["POST"])
+@login_required
+@admin_required
+def recheck_link_reputation(profile_id):
+    """Manual re-check — a listing's link reputation isn't static, so this
+    is also useful for already-published listings, not just the queue.
+    Shared by admin/queue.html and superadmin/index.html."""
+    profile = FounderProfile.query.get_or_404(profile_id)
+    status = _refresh_url_reputation(profile)
+    db.session.commit()
+    flash(
+        f"Link safety re-checked for {profile.project_name}: {status or 'could not be determined'}.",
+        "danger" if status == "flagged" else "info",
+    )
+    return redirect(request.referrer or url_for("admin.queue"))

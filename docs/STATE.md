@@ -132,6 +132,33 @@ the code right now.
   before `exec`'ing gunicorn, so a redeploy can't forget to migrate), and
   dropped the obsolete `version:` key from `docker-compose.yml`.
 
+- **Link reputation check ("are we a tool for bad actors?")** (2026-09-10,
+  `app/compliance/url_reputation.py`): checks a founder's `external_url`
+  against third-party malware/phishing databases — this protects
+  marketplace **visitors**, unlike the compliance scan above (which
+  protects the founder's own site). Three sources, combined ("flagged" if
+  any source flags it): URLhaus (abuse.ch, free, no key, always on),
+  Google Safe Browsing v4, and VirusTotal v3 (both optional — skipped with
+  an "unknown/not configured" result if their env var isn't set; both keys
+  are set in this environment's `.env`). No SSRF surface here (these only
+  ask third-party APIs about the domain — they never fetch the founder's
+  site themselves). Wired into moderation, not a separate opt-in flow:
+    - runs once when a founder submits for review (`founder/routes.py::submit_for_review`),
+      so the moderator sees a result already in the queue
+    - **re-runs right before publishing** (`admin/routes.py::approve`) — a
+      flagged link is refused auto-publish; the moderator has to click
+      "Approve anyway" after reading the flagged detail (handles false
+      positives without silently letting a bad link through by default)
+    - a manual "Re-check link safety" button exists in both the moderation
+      queue and the superadmin panel, since reputation isn't static —
+      a link can turn bad well after a listing is already live
+  A lookup failure (network error, rate limit) never blocks a legitimate
+  submission/approval — falls through as "unknown", logged, moves on.
+  Verified live against real APIs: github.com comes back clean from all
+  three sources; Google's official test malware URL
+  (`testsafebrowsing.appspot.com/s/malware.html`) is correctly flagged by
+  both Google Safe Browsing and VirusTotal.
+
 ## 🟡 Stubbed / placeholder — needs real work
 
 - **Deeper compliance tiers** (`nis2_ready` / `full_audit` in

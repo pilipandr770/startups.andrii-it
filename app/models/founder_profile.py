@@ -69,6 +69,14 @@ class FounderProfile(db.Model):
     # app/compliance/scanner.py's deep-scan section.
     vuln_scan_consent_given_at = db.Column(db.DateTime, nullable=True)
 
+    # Third-party malware/phishing reputation check on external_url — this
+    # protects MARKETPLACE VISITORS (unlike the scans above, which protect
+    # the founder's own site's users). See app/compliance/url_reputation.py.
+    # "clean" | "flagged" | "unknown" | None (never checked yet).
+    url_reputation_status = db.Column(db.String(20), nullable=True)
+    url_reputation_detail = db.Column(db.Text, nullable=True)
+    url_reputation_checked_at = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     published_at = db.Column(db.DateTime, nullable=True)
