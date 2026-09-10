@@ -32,6 +32,29 @@ def save_upload(file_storage, subfolder):
     return f"uploads/{subfolder}/{unique_name}"
 
 
+def delete_uploaded_file(relative_path):
+    """relative_path is what save_upload returns/DB stores, e.g.
+    'uploads/banners/<uuid>_name.png' — relative to the static folder.
+    UPLOAD_FOLDER itself already points at .../app/static/uploads, so strip
+    that duplicate 'uploads/' segment before joining. Used both when
+    deleting a profile/account (GDPR-style full cleanup — DB cascades don't
+    touch the filesystem) and when a new upload replaces an old one."""
+    if not relative_path:
+        return
+    subpath = relative_path.split("uploads/", 1)[-1]
+    full_path = os.path.join(current_app.config["UPLOAD_FOLDER"], subpath)
+    try:
+        if os.path.isfile(full_path):
+            os.remove(full_path)
+    except OSError:
+        current_app.logger.warning("Could not remove upload file %s", full_path, exc_info=True)
+
+
+def delete_profile_uploads(profile):
+    delete_uploaded_file(profile.banner_image_path)
+    delete_uploaded_file(profile.pitch_deck_path)
+
+
 @bp.route("/")
 @login_required
 def dashboard():
@@ -80,10 +103,12 @@ def edit_profile():
 
         banner_path = save_upload(form.banner_image.data, "banners")
         if banner_path:
+            delete_uploaded_file(profile.banner_image_path)  # old file, being replaced
             profile.banner_image_path = banner_path
 
         deck_path = save_upload(form.pitch_deck.data, "decks")
         if deck_path:
+            delete_uploaded_file(profile.pitch_deck_path)  # old file, being replaced
             profile.pitch_deck_path = deck_path
 
         # Any edit to a published (or previously rejected) profile goes back
@@ -113,6 +138,7 @@ def delete_project():
     if not profile:
         abort(404)
     project_name = profile.project_name
+    delete_profile_uploads(profile)
     db.session.delete(profile)
     db.session.commit()
     flash(f"Deleted: {project_name}.", "info")

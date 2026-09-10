@@ -5,6 +5,8 @@ for the cascade relationships this relies on (deleting a User or
 FounderProfile must clean up everything hanging off it).
 """
 
+import os
+
 import pytest
 
 from app import create_app
@@ -127,6 +129,29 @@ def test_delete_account_cascades_everything(app, client):
     resp = client.get("/dashboard/", follow_redirects=False)
     assert resp.status_code == 302
     assert "/auth/login" in resp.headers["Location"]
+
+
+# --- Uploaded files are cleaned up too, not just DB rows -------------------
+
+def test_delete_account_removes_uploaded_files_from_disk(app, client):
+    user_id, profile_id = _make_founder_with_profile(app)
+    with app.app_context():
+        upload_folder = app.config["UPLOAD_FOLDER"]
+        deck_dir = os.path.join(upload_folder, "decks")
+        os.makedirs(deck_dir, exist_ok=True)
+        deck_path = os.path.join(deck_dir, "test-cleanup-deck.pdf")
+        with open(deck_path, "wb") as f:
+            f.write(b"%PDF-1.4 fake")
+
+        profile = FounderProfile.query.get(profile_id)
+        profile.pitch_deck_path = "uploads/decks/test-cleanup-deck.pdf"
+        db.session.commit()
+        assert os.path.isfile(deck_path)
+
+    _login(client, "founder@example.com")
+    client.post("/auth/account/delete", data={"password": "password123"})
+
+    assert not os.path.isfile(deck_path)
 
 
 # --- Superadmin deletion -----------------------------------------------------

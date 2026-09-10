@@ -5,6 +5,7 @@ from app.auth import bp
 from app.auth.forms import RegisterForm, LoginForm, ChangePasswordForm, DeleteAccountForm
 from app.extensions import db
 from app.models import User, UserRole
+from app.founder.routes import delete_profile_uploads
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -93,6 +94,8 @@ def delete_account():
     # so using it after logout_user() clears that session would silently
     # operate on an anonymous user instead of the one we meant to delete.
     user = User.query.get(current_user.id)
+    if user.founder_profile:
+        delete_profile_uploads(user.founder_profile)  # DB cascade won't touch the filesystem
     db.session.delete(user)  # cascades: profile, chatbot config, scans, subscription, donations
     db.session.commit()
     logout_user()

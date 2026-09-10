@@ -7,6 +7,7 @@ from app.superadmin import bp
 from app.decorators import superadmin_required
 from app.extensions import db
 from app.models import User, FounderProfile, ProfileStatus, Subscription, SubscriptionStatus, SubscriptionTier
+from app.founder.routes import delete_profile_uploads
 
 
 @bp.route("/")
@@ -109,6 +110,7 @@ def delete_profile(profile_id):
     project. The owner's account is untouched; use delete_user for that."""
     profile = FounderProfile.query.get_or_404(profile_id)
     project_name = profile.project_name
+    delete_profile_uploads(profile)
     db.session.delete(profile)
     db.session.commit()
     flash(f"Deleted project: {project_name}", "warning")
@@ -129,6 +131,8 @@ def delete_user(user_id):
 
     user = User.query.get_or_404(user_id)
     email = user.email
+    if user.founder_profile:
+        delete_profile_uploads(user.founder_profile)
     db.session.delete(user)
     db.session.commit()
     flash(f"Deleted account: {email}", "warning")
